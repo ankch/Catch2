@@ -2962,7 +2962,7 @@ namespace Catch {
                         std::string desc = Detail::getAnnotation( cls, "Description", testCaseName );
                         const char* className = class_getName( cls );
 
-                        getMutableRegistryHub().registerTest( makeTestCase( new OcMethod( cls, selector ), className, name.c_str(), desc.c_str(), SourceLineInfo("",0) ) );
+                        getMutableRegistryHub().registerTest( makeTestCase( new OcMethod( cls, selector ), className, NameAndTags(name, desc), SourceLineInfo("",0) ) );
                         noTestMethods++;
                     }
                 }
