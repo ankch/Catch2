@@ -34,9 +34,9 @@
 
 namespace Catch {
     
-class XCTestReporter : public StreamingReporterBase {
+class XCTestReporter : public StreamingReporterBase<XCTestReporter> {
 public:
-    XCTestReporter (ReporterConfig const &config) : StreamingReporterBase(config) {}
+    XCTestReporter (ReporterConfig const &config, std::vector<AssertionStats> &collectedAssertions) : StreamingReporterBase(config), _collectedAssertions(collectedAssertions) {}
     virtual ~XCTestReporter () {}
     
     const std::vector<AssertionStats> &getCollectedAssertions () { return _collectedAssertions; }
@@ -60,7 +60,8 @@ private:
     }
     
 private:
-    std::vector<AssertionStats> _collectedAssertions;
+    // ANKCH: Move this out of class and into a constructor inpar.  Object will be consumed when passed to RunContext
+    std::vector<AssertionStats> &_collectedAssertions;
 };
 
 class XCTestRegistryHub : public RegistryHub {
@@ -168,11 +169,13 @@ private:
         /* Target only our configured test case */
         ConfigData data;
         data.testsOrTags.push_back(testInfo.name);
-        Ptr<IConfig> config = new Config(data);
+        //IConfigPtr config = new Config(data);
+        auto config = std::make_shared<Config>(data);
         
         /* Set up our run context */
-        XCTestReporter* reporter = new XCTestReporter(ReporterConfig(config));
-        RunContext runner(config.get(), reporter);
+        std::vector<AssertionStats> collectedAssertions;
+        auto reporter = std::make_unique<XCTestReporter>(ReporterConfig(config), collectedAssertions);
+        RunContext runner(config, std::move(reporter));
         
         /* Run the test */
         Totals totals;
@@ -181,7 +184,7 @@ private:
         runner.testGroupEnded(testInfo.name, totals, 1, 1);
         
         /* Report failures to XCTest */
-        for (auto &&as : reporter->getCollectedAssertions()) {
+        for (auto &&as : collectedAssertions) {
             auto result = as.assertionResult;
             bool expected = true;
             std::string description = "";
@@ -268,7 +271,7 @@ private:
                 
                 
                 NSString *desc = [NSString stringWithUTF8String: msg.c_str()];
-                NSString *file = [NSString stringWithUTF8String: result.getSourceInfo().file.c_str()];
+                NSString *file = [NSString stringWithUTF8String: result.getSourceInfo().file];
                 
                 [self recordFailureWithDescription: desc inFile: file atLine: result.getSourceInfo().line expected: expected];
             }
@@ -283,7 +286,7 @@ private:
                     msg.append(".");
                 
                 NSString *desc = [NSString stringWithUTF8String: msg.c_str()];
-                NSString *file = [NSString stringWithUTF8String: info.lineInfo.file.c_str()];
+                NSString *file = [NSString stringWithUTF8String: info.lineInfo.file];
                 
                 [self recordFailureWithDescription: desc inFile: file atLine: info.lineInfo.line expected: expected];
             }
