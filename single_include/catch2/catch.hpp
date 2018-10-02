@@ -2170,7 +2170,7 @@ namespace Catch {
         virtual ITestCaseRegistry const& getTestCaseRegistry() const = 0;
         virtual ITagAliasRegistry const& getTagAliasRegistry() const = 0;
 
-        virtual IExceptionTranslatorRegistry const& getExceptionTranslatorRegistry() const = 0;
+        virtual IExceptionTranslatorRegistry& getExceptionTranslatorRegistry() = 0;
 
         virtual StartupExceptionRegistry const& getStartupExceptionRegistry() const = 0;
     };
@@ -2185,7 +2185,7 @@ namespace Catch {
         virtual void registerStartupException() noexcept = 0;
     };
 
-    IRegistryHub const& getRegistryHub();
+    IRegistryHub& getRegistryHub();
     IMutableRegistryHub& getMutableRegistryHub();
     void cleanUp();
     std::string translateActiveException();
@@ -9271,7 +9271,7 @@ namespace Catch {
             ITestCaseRegistry const& getTestCaseRegistry() const override {
                 return m_testCaseRegistry;
             }
-            IExceptionTranslatorRegistry const& getExceptionTranslatorRegistry() const override {
+            IExceptionTranslatorRegistry& getExceptionTranslatorRegistry() override {
                 return m_exceptionTranslatorRegistry;
             }
             ITagAliasRegistry const& getTagAliasRegistry() const override {
@@ -9308,18 +9308,26 @@ namespace Catch {
             TagAliasRegistry m_tagAliasRegistry;
             StartupExceptionRegistry m_exceptionRegistry;
         };
+        
+        // Single, global, instance
+        RegistryHub*& getTheRegistryHub() {
+            static RegistryHub* theRegistryHub = nullptr;
+            if( !theRegistryHub )
+                theRegistryHub = new RegistryHub();
+            return theRegistryHub;
+        }
     }
 
-    using RegistryHubSingleton = Singleton<RegistryHub, IRegistryHub, IMutableRegistryHub>;
-
-    IRegistryHub const& getRegistryHub() {
-        return RegistryHubSingleton::get();
+    IRegistryHub& getRegistryHub() {
+        return *getTheRegistryHub();
     }
     IMutableRegistryHub& getMutableRegistryHub() {
-        return RegistryHubSingleton::getMutable();
+        return *getTheRegistryHub();
     }
     void cleanUp() {
         cleanupSingletons();
+        delete getTheRegistryHub();
+        getTheRegistryHub() = nullptr;
         cleanUpContext();
     }
     std::string translateActiveException() {
