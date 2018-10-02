@@ -32,6 +32,9 @@ namespace { namespace MatchersTests {
         return "some completely different text that contains one common word";
     }
 
+    inline bool alwaysTrue(int) { return true; }
+    inline bool alwaysFalse(int) { return false; }
+
 
 #ifdef _MSC_VER
 #pragma warning(disable:4702) // Unreachable code -- MSVC 19 (VS 2015) sees right through the indirection
@@ -41,6 +44,10 @@ namespace { namespace MatchersTests {
 
     struct SpecialException : std::exception {
         SpecialException(int i_) : i(i_) {}
+
+        char const* what() const noexcept override {
+            return "SpecialException::what";
+        }
 
         int i;
     };
@@ -321,6 +328,11 @@ namespace { namespace MatchersTests {
 
                 REQUIRE_THAT(0.f, WithinAbs(-0.f, 0));
                 REQUIRE_THAT(NAN, !WithinAbs(NAN, 0));
+
+                REQUIRE_THAT(11.f, !WithinAbs(10.f, 0.5f));
+                REQUIRE_THAT(10.f, !WithinAbs(11.f, 0.5f));
+                REQUIRE_THAT(-10.f, WithinAbs(-10.f, 0.5f));
+                REQUIRE_THAT(-10.f, WithinAbs(-9.6f, 0.5f));
             }
             SECTION("ULPs") {
                 REQUIRE_THAT(1.f, WithinULP(1.f, 0));
@@ -358,6 +370,11 @@ namespace { namespace MatchersTests {
                 REQUIRE_THAT(0., !WithinAbs(1., 0.99));
 
                 REQUIRE_THAT(NAN, !WithinAbs(NAN, 0));
+
+                REQUIRE_THAT(11., !WithinAbs(10., 0.5));
+                REQUIRE_THAT(10., !WithinAbs(11., 0.5));
+                REQUIRE_THAT(-10., WithinAbs(-10., 0.5));
+                REQUIRE_THAT(-10., WithinAbs(-9.6, 0.5));
             }
             SECTION("ULPs") {
                 REQUIRE_THAT(1., WithinULP(1., 0));
@@ -384,6 +401,35 @@ namespace { namespace MatchersTests {
                 REQUIRE_NOTHROW(WithinULP(1., 0));
                 REQUIRE_THROWS_AS(WithinULP(1., -1), std::domain_error);
             }
+        }
+
+        TEST_CASE("Arbitrary predicate matcher", "[matchers][generic]") {
+            SECTION("Function pointer") {
+                REQUIRE_THAT(1,  Predicate<int>(alwaysTrue, "always true"));
+                REQUIRE_THAT(1, !Predicate<int>(alwaysFalse, "always false"));
+            }
+            SECTION("Lambdas + different type") {
+                REQUIRE_THAT("Hello olleH",
+                             Predicate<std::string>(
+                                 [] (std::string const& str) -> bool { return str.front() == str.back(); },
+                                 "First and last character should be equal")
+                );
+
+                REQUIRE_THAT("This wouldn't pass",
+                             !Predicate<std::string>(
+                                 [] (std::string const& str) -> bool { return str.front() == str.back(); }
+                             )
+                );
+            }
+        }
+
+        TEST_CASE("Regression test #1", "[matchers][vector]") {
+            // At some point, UnorderedEqualsMatcher skipped
+            // mismatched prefixed before doing the comparison itself
+            std::vector<char> actual = { 'a', 'b' };
+            std::vector<char> expected = { 'c', 'b' };
+
+            CHECK_THAT(actual, !UnorderedEquals(expected));
         }
 
 } } // namespace MatchersTests

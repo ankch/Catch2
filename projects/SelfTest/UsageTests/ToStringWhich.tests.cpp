@@ -16,10 +16,21 @@ std::string fallbackStringifier(T const&) {
 #include "catch.hpp"
 
 
+
+#if defined(__GNUC__)
+// This has to be left enabled until end of the TU, because the GCC
+// frontend reports operator<<(std::ostream& os, const has_maker_and_operator&)
+// as unused anyway
+#    pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
+namespace {
+
 struct has_operator { };
 struct has_maker {};
 struct has_maker_and_operator {};
 struct has_neither {};
+struct has_template_operator {};
 
 std::ostream& operator<<(std::ostream& os, const has_operator&) {
     os << "operator<<( has_operator )";
@@ -30,6 +41,14 @@ std::ostream& operator<<(std::ostream& os, const has_maker_and_operator&) {
     os << "operator<<( has_maker_and_operator )";
     return os;
 }
+
+template <typename StreamT>
+StreamT& operator<<(StreamT& os, const has_template_operator&) {
+    os << "operator<<( has_template_operator )";
+    return os;
+}
+
+} // end anonymous namespace
 
 namespace Catch {
     template<>
@@ -69,6 +88,12 @@ TEST_CASE("stringify( has_neither )", "[toString]") {
     REQUIRE( ::Catch::Detail::stringify(item) == "{ !!! }" );
 }
 
+// Call the templated operator
+TEST_CASE( "stringify( has_template_operator )", "[toString]" ) {
+    has_template_operator item;
+    REQUIRE( ::Catch::Detail::stringify( item ) == "operator<<( has_template_operator )" );
+}
+
 
 // Vectors...
 
@@ -86,6 +111,8 @@ TEST_CASE( "stringify( vectors<has_maker_and_operator> )", "[toString]" ) {
     std::vector<has_maker_and_operator> v(1);
     REQUIRE( ::Catch::Detail::stringify( v ) == "{ StringMaker<has_maker_and_operator> }" );
 }
+
+namespace {
 
 // Range-based conversion should only be used if other possibilities fail
 struct int_iterator {
@@ -126,6 +153,8 @@ struct stringmaker_range {
     int_iterator end() const { return {}; }
 };
 
+} // end anonymous namespace
+
 namespace Catch {
 template <>
 struct StringMaker<stringmaker_range> {
@@ -134,6 +163,8 @@ struct StringMaker<stringmaker_range> {
     }
 };
 }
+
+namespace {
 
 struct just_range {
     int_iterator begin() const { return int_iterator{ 1 }; }
@@ -144,6 +175,8 @@ struct disabled_range {
     int_iterator begin() const { return int_iterator{ 1 }; }
     int_iterator end() const { return {}; }
 };
+
+} // end anonymous namespace
 
 namespace Catch {
 template <>

@@ -12,7 +12,6 @@
 #
 
 from  __future__  import print_function
-from scriptCommon import catchPath
 
 import argparse
 import glob
@@ -20,12 +19,14 @@ import os
 import re
 import sys
 
+from scriptCommon import catchPath
+
 # Configuration:
 
 minTocEntries = 4
 
 headingExcludeDefault = [1,3,4,5]  # use level 2 headers for at default
-headingExcludeRelease = [2,3,4,5]  # use level 1 headers for release-notes.md
+headingExcludeRelease = [1,3,4,5]  # use level 1 headers for release-notes.md
 
 documentsDefault = os.path.join(os.path.relpath(catchPath), 'docs/*.md')
 releaseNotesName = 'release-notes.md'
@@ -90,18 +91,20 @@ def dashifyHeadline(line):
     level = len(stripped_right) - len(stripped_both)
     stripped_wspace = stripped_both.strip()
 
-    # character replacements
-    replaced_colon = stripped_wspace.replace('.', '')
-    replaced_slash = replaced_colon.replace('/', '')
-    rem_nonvalids = ''.join([c if c in VALIDS
-                             else '-' for c in replaced_slash])
+    # GitHub's sluggification works in an interesting way
+    # 1) '+', '/', '(', ')' and so on are just removed
+    # 2) spaces are converted into '-' directly
+    # 3) multiple -- are not collapsed
 
-    lowered = rem_nonvalids.lower()
-    dashified = re.sub(r'(-)\1+', r'\1', lowered)  # remove duplicate dashes
-    dashified = dashified.strip('-')  # strip dashes from start and end
-
-    # exception '&' (double-dash in github)
-    dashified = dashified.replace('-&-', '--')
+    dashified = ''
+    for c in stripped_wspace:
+        if c in VALIDS:
+            dashified += c.lower()
+        elif c.isspace():
+            dashified += '-'
+        else:
+            # Unknown symbols are just removed
+            continue
 
     return [stripped_wspace, dashified, level]
 
@@ -431,7 +434,7 @@ def updateDocumentToCMain():
 
     args = parser.parse_args()
 
-    paths = args.Input if len(args.Input) > 0 else [documentsDefault]
+    paths = args.Input if args.Input else [documentsDefault]
 
     changedFiles = updateDocumentToC(paths=paths, min_toc_len=args.minTocEntries, verbose=args.verbose)
 

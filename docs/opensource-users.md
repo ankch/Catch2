@@ -36,7 +36,7 @@ The next-generation core storage and query engine for Couchbase Lite
 A High-performance Cluster Computing Engine
 
 ### [forest](https://github.com/xorz57/forest)
-Forest is an open-source, template library of tree data structures written in C++11.
+Template Library of Tree Data Structures
 
 ### [Fuxedo](https://github.com/fuxedo/fuxedo)
 Open source Oracle Tuxedo-like XATMI middleware for C and C++.
@@ -46,6 +46,9 @@ A header-only template engine for modern C++.
 
 ### [JSON for Modern C++](https://github.com/nlohmann/json)
 A, single-header, JSON parsing library that takes advantage of what C++ has to offer.
+
+### [libcluon](https://github.com/chrberger/libcluon)
+A single-header-only library written in C++14 to glue distributed software components (UDP, TCP, shared memory) supporting natively Protobuf, LCM/ZCM, MsgPack, and JSON for dynamic message transformations in-between. 
 
 ### [MNMLSTC Core](https://github.com/mnmlstc/core)
 A small and easy to use C++11 library that adds a functionality set that will be available in C++14 and later, as well as some useful additions.
@@ -67,6 +70,9 @@ A C++ client library for Consul. Consul is a distributed tool for discovering an
 
 ### [Reactive-Extensions/ RxCpp](https://github.com/Reactive-Extensions/RxCpp)
 A library of algorithms for values-distributed-in-time
+
+### [thor](https://github.com/xorz57/thor)
+Wrapper Library for CUDA
 
 ### [TextFlowCpp](https://github.com/philsquared/textflowcpp)
 A small, single-header-only, library for wrapping and composing columns of text
