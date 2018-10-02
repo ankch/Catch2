@@ -31,7 +31,7 @@ namespace Catch {
             ITestCaseRegistry const& getTestCaseRegistry() const override {
                 return m_testCaseRegistry;
             }
-            IExceptionTranslatorRegistry const& getExceptionTranslatorRegistry() const override {
+            IExceptionTranslatorRegistry& getExceptionTranslatorRegistry() override {
                 return m_exceptionTranslatorRegistry;
             }
             ITagAliasRegistry const& getTagAliasRegistry() const override {
@@ -68,18 +68,26 @@ namespace Catch {
             TagAliasRegistry m_tagAliasRegistry;
             StartupExceptionRegistry m_exceptionRegistry;
         };
+
+        // Single, global, instance
+        RegistryHub*& getTheRegistryHub() {
+            static RegistryHub* theRegistryHub = nullptr;
+            if( !theRegistryHub )
+                theRegistryHub = new RegistryHub();
+            return theRegistryHub;
+        }
     }
 
-    using RegistryHubSingleton = Singleton<RegistryHub, IRegistryHub, IMutableRegistryHub>;
-
-    IRegistryHub const& getRegistryHub() {
-        return RegistryHubSingleton::get();
+    IRegistryHub& getRegistryHub() {
+        return *getTheRegistryHub();
     }
     IMutableRegistryHub& getMutableRegistryHub() {
-        return RegistryHubSingleton::getMutable();
+        return *getTheRegistryHub();
     }
     void cleanUp() {
         cleanupSingletons();
+        delete getTheRegistryHub();
+        getTheRegistryHub() = nullptr;
         cleanUpContext();
     }
     std::string translateActiveException() {
