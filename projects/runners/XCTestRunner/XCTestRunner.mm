@@ -60,7 +60,6 @@ private:
     }
     
 private:
-    // ANKCH: Move this out of class and into a constructor inpar.  Object will be consumed when passed to RunContext
     std::vector<AssertionStats> &_collectedAssertions;
 };
 
@@ -169,7 +168,6 @@ private:
         /* Target only our configured test case */
         ConfigData data;
         data.testsOrTags.push_back(testInfo.name);
-        //IConfigPtr config = new Config(data);
         auto config = std::make_shared<Config>(data);
         
         /* Set up our run context */
