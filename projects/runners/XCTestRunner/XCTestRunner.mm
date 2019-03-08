@@ -172,7 +172,7 @@ private:
         
         /* Set up our run context */
         std::vector<AssertionStats> collectedAssertions;
-        auto reporter = std::make_unique<XCTestReporter>(ReporterConfig(config), collectedAssertions);
+        auto reporter = std::unique_ptr<XCTestReporter>(new XCTestReporter(ReporterConfig(config), collectedAssertions));
         RunContext runner(config, std::move(reporter));
         
         /* Run the test */
